@@ -41,7 +41,7 @@ const Login = () => {
     <div style={{ backgroundColor: '#1f1f1f', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <Paper elevation={3} sx={{ padding: 4, width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Typography variant="h4" gutterBottom align="center" sx={{ color: '#1f1f1f' }}>
-          Please Login, Chirag!
+           Chirag's Basement!
         </Typography>
         {error && (
           <Typography variant="body2" color="error" align="center" sx={{ color: '#1f1f1f' }}>

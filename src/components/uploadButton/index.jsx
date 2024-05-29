@@ -1,110 +1,104 @@
 import React, { useState } from 'react';
-import { Modal, Button, Upload, message, Spin } from 'antd';
+import { Modal, Button, Upload, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { ref, uploadBytes, listAll } from 'firebase/storage';
-import moment from 'moment';
-import { storage, auth } from '../../firebase/firebase'; // Ensure the correct path
+import { auth, storage } from '../../firebase/firebase';
+import dayjs from 'dayjs';
 
 const UploadButton = () => {
-  const [visible, setVisible] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
 
-  const handleUpload = async () => {
-    setUploading(true);
-    const dateFolder = moment().format('DD-MM-YY');
-    const user = auth.currentUser;
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
 
-    if (!user) {
-      message.error('You need to be logged in to upload files.');
-      setUploading(false);
+  const handleOk = async () => {
+    if (fileList.length === 0) {
+      message.error('Please select a file to upload');
       return;
     }
 
-    try {
-      const userFolderRef = ref(storage, `${user.uid}/${dateFolder}`);
-      
-      // Check if the folder exists by listing its contents
-      const folderExists = await checkIfFolderExists(userFolderRef);
+    setUploading(true);
 
-      if (!folderExists) {
-        // Folder does not exist, but we don't need to create it explicitly. Just upload the files.
-        await uploadFiles(fileList, user.uid, dateFolder);
-      } else {
-        // Folder exists, proceed with the upload
-        await uploadFiles(fileList, user.uid, dateFolder);
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        message.error('User is not authenticated.');
+        setUploading(false);
+        return;
       }
+
+      const uidFolderRef = ref(storage, `${user.uid}`);
+      const dateFolder = dayjs().format('DD-MM-YY');
+      const dateFolderRef = ref(storage, `${user.uid}/${dateFolder}`);
+
+      // Check if UID folder exists
+      const uidFolderList = await listAll(uidFolderRef);
+      if (!uidFolderList.prefixes.some(folder => folder.name === dateFolder)) {
+        console.log('Creating date folder');
+      }
+
+      // Upload files
+      const promises = fileList.map(file => {
+        const fileRef = ref(storage, `${user.uid}/${dateFolder}/${file.name}`);
+        return uploadBytes(fileRef, file.originFileObj);
+      });
+
+      await Promise.all(promises);
 
       message.success('Upload successful!');
       setFileList([]);
-      setVisible(false);
+      window.location.reload();
     } catch (error) {
-      console.error("Upload error: ", error);
+      console.error('Error uploading files:', error);
       message.error('Upload failed. Please try again.');
     } finally {
       setUploading(false);
+      setIsModalVisible(false);
     }
   };
 
-  const checkIfFolderExists = async (folderRef) => {
-    const folderContents = await listAll(folderRef);
-    return folderContents.items.length > 0 || folderContents.prefixes.length > 0;
+  const handleCancel = () => {
+    setIsModalVisible(false);
   };
 
-  const uploadFiles = async (files, userId, dateFolder) => {
-    const uploadPromises = files.map(file => {
-      const fileRef = ref(storage, `${userId}/${dateFolder}/${file.name}`);
-      return uploadBytes(fileRef, file.originFileObj);
-    });
-    await Promise.all(uploadPromises);
+  const handleChange = info => {
+    setFileList(info.fileList);
   };
-
-  const handleChange = ({ fileList }) => setFileList(fileList);
 
   return (
     <>
-      <Button type="primary" icon={<UploadOutlined />} onClick={() => setVisible(true)}>
+      <Button
+        type="primary"
+        icon={<UploadOutlined />}
+        onClick={showModal}
+        style={{
+          width: '100%',
+          marginBottom: '3px',
+          backgroundColor: 'light-blue',
+          color: '#fff',
+          borderColor: 'light-blue'
+        }}
+      >
         Upload Files
       </Button>
       <Modal
-        visible={visible}
         title="Upload Files"
-        onCancel={() => setVisible(false)}
-        footer={[
-          <Button key="back" onClick={() => setVisible(false)}>
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={uploading}
-            onClick={handleUpload}
-          >
-            Confirm Upload
-          </Button>,
-        ]}
+        visible={isModalVisible}
+        onOk={handleOk}
+        confirmLoading={uploading}
+        onCancel={handleCancel}
       >
-        {uploading ? (
-          <Spin tip="Uploading...">
-            <Upload
-              multiple
-              fileList={fileList}
-              onChange={handleChange}
-              beforeUpload={() => false}
-            >
-              <Button icon={<UploadOutlined />}>Select Files</Button>
-            </Upload>
-          </Spin>
-        ) : (
-          <Upload
-            multiple
-            fileList={fileList}
-            onChange={handleChange}
-            beforeUpload={() => false}
-          >
-            <Button icon={<UploadOutlined />}>Select Files</Button>
-          </Upload>
-        )}
+        <Upload
+          fileList={fileList}
+          beforeUpload={() => false}
+          onChange={handleChange}
+          multiple
+        >
+          <Button icon={<UploadOutlined />}>Select File</Button>
+        </Upload>
       </Modal>
     </>
   );
