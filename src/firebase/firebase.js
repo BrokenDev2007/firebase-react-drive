@@ -7,13 +7,14 @@ import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDNyP3bu8GjTkohfrrX0BjdbWvwSeHlB7A",
-  authDomain: "brokendev-site.firebaseapp.com",
-  projectId: "brokendev-site",
-  storageBucket: "brokendev-site.appspot.com",
-  messagingSenderId: "1093374307667",
-  appId: "1:1093374307667:web:c20a2625efccecea5685a6",
-  measurementId: "G-2H7S2YJL5P"
+  apiKey: "YOUR API KEY",
+  authDomain: "YOUR DOMAIN",
+  databaseURL: "YOUR DB URL",
+  projectId: "YOUR ID",
+  storageBucket: "YOUR BUCKET ID",
+  messagingSenderId: "YOUR SENDER ID",
+  appId: "YOUR APP ID",
+  measurementId: "YOUR MEASUREMENT ID"
 };
 
 // Initialize Firebase
